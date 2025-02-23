@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Travel Tracker</title>
+  <link rel="stylesheet" href="./styles/main.css">
+</head>
+
+<body>
+  <form class="tab-view tab-view-height-auto" action="/user" method="post">
+    <% users.forEach(function(user) { %>
+      <input type="submit" name="user" value="<%= user.id %>" id="<%= user.id %>">
+      <label for="<%= user.id %>" style="background-color: <%= user.color %>;">
+        <%= user.name %>
+      </label>
+      <% }); %>
+
+        <input type="submit" name="add" value="new" id="tab">
+        <label for="tab">Add Family Member</label>
+
+  </form>
+
+  <form action="/add" method="post">
+    <input type="text" name="country" autofocus placeholder="<%= locals.error ? error :  'Enter country name'%>">
+    <button type="submit" style="background-color: <%= color %>;">Add</button>
+  </form>
+
+  <%- include("partials/worldmap.ejs")%>
+
+    <h2 class="total-count">Total Countries: <%=total%>
+    </h2>
+    <script>
+      const country_codes = "<%= countries %>".split(",")
+      console.log(typeof ("<%= countries %>"))
+      country_codes.forEach(code => {
+        document.getElementById(code).style.fill = "<%= color %>"
+      });
+    </script>
+</body>
+
+</html>
