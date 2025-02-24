@@ -9,7 +9,7 @@
 </head>
 
 <body>
-<!-- 
+  <!-- 
   <form action="/" method="GET" style="width: fit-content; display: inline-block;">
     <button type="submit" style="background-color: red; color:white; font-size: 1rem; font-weight: bold;">All</button>
   </form> -->
@@ -24,11 +24,11 @@
 
         <input type="submit" name="user" value="new" id="tab">
         <label for="tab">Add Family Member</label>
-
   </form>
 
   <form action="/add" method="post">
-    <input type="text" name="country" autocomplete="off" autofocus placeholder="<%= locals.error ? error :  'Enter country name'%>">
+    <input type="text" name="country" autocomplete="off" autofocus
+      placeholder="<%= locals.error ? error :  'Enter country name'%>">
     <button type="submit" style="background-color: #007bff ">Add</button>
   </form>
 
@@ -38,9 +38,13 @@
     </h2>
     <script>
       const country_codes = "<%= countries %>".split(",")
-      console.log(typeof ("<%= countries %>"))
+      console.log("<%= countries %>")
       country_codes.forEach(code => {
-        document.getElementById(code).style.fill = "<%= color %>"
+        try {
+          document.getElementById(code).style.fill = "<%= color %>"
+        } catch (error) {
+          console.log(error)
+        }
       });
     </script>
 </body>

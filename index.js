@@ -22,7 +22,7 @@ const port = 3000;
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
-let currentUserId = 1;
+let currentUserId;
 
 let users;
 
@@ -67,7 +67,6 @@ async function getUserCountries(userId) {
       countryCodes.push(countryCodeResult.rows[0].country_code);
     }
     return countryCodes;
-
   } catch (error) {
     console.log(error);
     return "error find user";
@@ -87,53 +86,109 @@ app.get("/", async (req, res) => {
 
 app.post("/add", async (req, res) => {
   const input = req.body["country"];
-
-  try {
-    const result = await db.query(
-      "SELECT country_code FROM countries WHERE LOWER(country_name) LIKE '%' || $1 || '%';",
-      [input.toLowerCase()]
-    );
-
-    const data = result.rows[0];
-    const countryCode = data.country_code;
+  res.locals.error;
+  if (input.length > 2) {
     try {
-      await db.query(
-        "INSERT INTO visited_countries (country_code) VALUES ($1)",
-        [countryCode]
+      const result = await db.query(
+        "SELECT id FROM country WHERE LOWER(country_name) LIKE '%' || $1 || '%';",
+        [input.toLowerCase()]
       );
-      res.redirect("/");
+
+      let countryID = 0;
+      if (result.rowCount != 0) {
+        const data = result.rows[0];
+        countryID = data.id;
+      }
+
+      if (countryID != 0) {
+        try {
+          console.log(
+            "currentUserId: ",
+            currentUserId,
+            " countryID: ",
+            countryID
+          );
+          await db.query(
+            "INSERT INTO visited_countries (member_id,country_id) VALUES ($1, $2)",
+            [currentUserId, countryID]
+          );
+          res.redirect("/");
+        } catch (err) {
+          console.log(err);
+          const countries = await checkVisisted();
+          res.render("index.ejs", {
+            countries: countries,
+            total: countries.length,
+            users: users,
+            color: "red",
+            error: "Country Already Added to Tracker",
+          });
+        }
+      }
     } catch (err) {
       console.log(err);
     }
-  } catch (err) {
-    console.log(err);
+  }else{
+    res.redirect("/")
   }
 });
 
 app.post("/user", async (req, res) => {
   if (req.body.user != "new") {
+    currentUserId = req.body.user;
 
     let countriesId = await getUserCountries(req.body.user);
-    
-    console.log(countriesId)
-    console.log(users[(req.body.user)-1].color)
 
     res.render("index.ejs", {
       countries: countriesId,
       total: countriesId.length,
       users: users,
-      color: users[(req.body.user)-1].color,
+      color: users[req.body.user - 1].color,
     });
   } else {
     console.log(req.body);
-    res.render("new.ejs")
+    res.render("new.ejs");
   }
 });
 
 app.post("/new", async (req, res) => {
+  let newReq = req.body;
+  console.log(newReq.name.length);
 
-  //Hint: The RETURNING keyword can return the data that was inserted.
-  //https://www.postgresql.org/docs/current/dml-returning.html
+  res.locals.error;
+
+  let errorMessage = "";
+  if (newReq.name.length === 0) {
+    errorMessage = "Please enter a name to Add a Family Member";
+    res.render("new.ejs", {
+      error: errorMessage,
+    });
+  } else if (newReq.name.length < 2) {
+    errorMessage = "Name must have at least 2 characters";
+    res.render("new.ejs", {
+      error: errorMessage,
+    });
+  }
+  if (!newReq.color) {
+    if (errorMessage.length != 0) {
+      errorMessage += "<br>Please select a color to the member";
+      res.render("new.ejs", {
+        error: errorMessage,
+      });
+    } else {
+      errorMessage = "Please select a color to the member";
+      res.render("new.ejs", {
+        error: errorMessage,
+      });
+    }
+  }
+
+  await db.query("INSERT INTO member (name,color) VALUES ($1, $2)", [
+    newReq.name,
+    newReq.color,
+  ]);
+
+  res.redirect("/");
 });
 
 app.listen(port, () => {
